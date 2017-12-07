@@ -39,6 +39,8 @@ public class AlbumMediaLoader extends CursorLoader {
             MediaStore.MediaColumns.DISPLAY_NAME,
             MediaStore.MediaColumns.MIME_TYPE,
             MediaStore.MediaColumns.SIZE,
+            MediaStore.Images.Media.LONGITUDE,
+            MediaStore.Images.Media.LATITUDE,
             "duration"};
 
     // === params for album ALL && showSingleMediaType: false ===
@@ -56,7 +58,8 @@ public class AlbumMediaLoader extends CursorLoader {
     // === params for album ALL && showSingleMediaType: true ===
     private static final String SELECTION_ALL_FOR_SINGLE_MEDIA_TYPE =
             MediaStore.Files.FileColumns.MEDIA_TYPE + "=?"
-                    + " AND " + MediaStore.MediaColumns.SIZE + ">0";
+                    + " AND " + MediaStore.MediaColumns.SIZE + ">0"
+                    + " AND " + MediaStore.Images.Media.LONGITUDE + " IS NOT NULL";
 
     private static String[] getSelectionArgsForSingleMediaType(int mediaType) {
         return new String[]{String.valueOf(mediaType)};
@@ -86,7 +89,8 @@ public class AlbumMediaLoader extends CursorLoader {
             MediaStore.Files.FileColumns.MEDIA_TYPE + "=?"
                     + " AND "
                     + " bucket_id=?"
-                    + " AND " + MediaStore.MediaColumns.SIZE + ">0";
+                    + " AND " + MediaStore.MediaColumns.SIZE + ">0"
+                    + " AND " + MediaStore.Images.Media.LONGITUDE + " IS NOT NULL";
 
     private static String[] getSelectionAlbumArgsForSingleMediaType(int mediaType, String albumId) {
         return new String[]{String.valueOf(mediaType), albumId};

@@ -18,8 +18,12 @@ package com.zhihu.matisse.sample;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.location.Address;
+import android.location.Geocoder;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.media.ExifInterface;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -33,11 +37,10 @@ import com.tbruyelle.rxpermissions2.RxPermissions;
 import com.zhihu.matisse.Matisse;
 import com.zhihu.matisse.MimeType;
 import com.zhihu.matisse.engine.impl.GlideEngine;
-import com.zhihu.matisse.engine.impl.PicassoEngine;
-import com.zhihu.matisse.filter.Filter;
-import com.zhihu.matisse.internal.entity.CaptureStrategy;
 
+import java.io.InputStream;
 import java.util.List;
+import java.util.Locale;
 
 import io.reactivex.Observer;
 import io.reactivex.disposables.Disposable;
@@ -53,7 +56,6 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         findViewById(R.id.zhihu).setOnClickListener(this);
-        findViewById(R.id.dracula).setOnClickListener(this);
 
         RecyclerView recyclerView = (RecyclerView) findViewById(R.id.recyclerview);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -76,31 +78,19 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
                             switch (v.getId()) {
                                 case R.id.zhihu:
                                     Matisse.from(SampleActivity.this)
-                                            .choose(MimeType.ofAll(), false)
+                                            .choose(MimeType.ofImage())
                                             .countable(true)
-                                            .capture(true)
-                                            .captureStrategy(
-                                                    new CaptureStrategy(true, "com.zhihu.matisse.sample.fileprovider"))
-                                            .maxSelectable(9)
-                                            .addFilter(new GifSizeFilter(320, 320, 5 * Filter.K * Filter.K))
-                                            .gridExpectedSize(
-                                                    getResources().getDimensionPixelSize(R.dimen.grid_expected_size))
+                                            .maxSelectable(1)
+                                            .showSingleMediaType(true)
+                                            .gridExpectedSize(getResources().getDimensionPixelSize(R.dimen.grid_expected_size))
                                             .restrictOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
                                             .thumbnailScale(0.85f)
+                                            .showSingleMediaType(true)
                                             .imageEngine(new GlideEngine())
                                             .forResult(REQUEST_CODE_CHOOSE);
                                     break;
-                                case R.id.dracula:
-                                    Matisse.from(SampleActivity.this)
-                                            .choose(MimeType.ofImage())
-                                            .theme(R.style.Matisse_Dracula)
-                                            .countable(false)
-                                            .maxSelectable(9)
-                                            .imageEngine(new PicassoEngine())
-                                            .forResult(REQUEST_CODE_CHOOSE);
-                                    break;
                             }
-                            mAdapter.setData(null, null);
+                            mAdapter.setData(null, null, null);
                         } else {
                             Toast.makeText(SampleActivity.this, R.string.permission_request_denied, Toast.LENGTH_LONG)
                                     .show();
@@ -123,7 +113,34 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_CODE_CHOOSE && resultCode == RESULT_OK) {
-            mAdapter.setData(Matisse.obtainResult(data), Matisse.obtainPathResult(data));
+            List<Uri> uris = Matisse.obtainResult(data);
+            try {
+                InputStream inputStream = getContentResolver().openInputStream(uris.get(0));
+                ExifInterface exifInterface = new ExifInterface(inputStream);
+                Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+                List<Address> fromLocation = geocoder.getFromLocation(exifInterface.getLatLong()[0], exifInterface.getLatLong()[1], 10);
+                mAdapter.setData(uris, Matisse.obtainPathResult(data), fromLocation);
+
+            } catch (Exception e) {
+                new AlertDialog.Builder(this).setMessage("1:" + e.getMessage()).show();
+
+            }
+
+/*
+            var inputStream: InputStream? = null
+            try {
+                inputStream = view?.context()?.contentResolver?.openInputStream(imageUri)
+                val exifInterface = ExifInterface(inputStream)
+                val geocoder = Geocoder(view?.context(), Locale.getDefault())
+                val addresses = geocoder.getFromLocation(exifInterface.latLong[0], exifInterface.latLong[1], 1)
+                return addresses[0]
+            } catch (e: Exception) {
+            } finally {
+                try {
+                    inputStream?.close()
+                } catch (ignored: IOException) {
+                }
+            }*/
         }
     }
 
@@ -131,10 +148,12 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
 
         private List<Uri> mUris;
         private List<String> mPaths;
+        private List<Address> mAddresses;
 
-        void setData(List<Uri> uris, List<String> paths) {
+        void setData(List<Uri> uris, List<String> paths, List<Address> addresses) {
             mUris = uris;
             mPaths = paths;
+            mAddresses = addresses;
             notifyDataSetChanged();
         }
 
@@ -146,11 +165,17 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
 
         @Override
         public void onBindViewHolder(UriViewHolder holder, int position) {
-            holder.mUri.setText(mUris.get(position).toString());
-            holder.mPath.setText(mPaths.get(position));
+            try {
+                holder.mUri.setText(mUris.get(position).toString());
+                holder.mPath.setText(mPaths.get(position));
+                Address address = mAddresses.get(position);
+                holder.mAddress.setText(address.getCountryName() + ", " + address.getLocality());
 
-            holder.mUri.setAlpha(position % 2 == 0 ? 1.0f : 0.54f);
-            holder.mPath.setAlpha(position % 2 == 0 ? 1.0f : 0.54f);
+                holder.mUri.setAlpha(position % 2 == 0 ? 1.0f : 0.54f);
+                holder.mPath.setAlpha(position % 2 == 0 ? 1.0f : 0.54f);
+            } catch (Exception e) {
+                new AlertDialog.Builder(holder.mUri.getContext()).setMessage(e.getMessage()).show();
+            }
         }
 
         @Override
@@ -162,11 +187,13 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
 
             private TextView mUri;
             private TextView mPath;
+            private TextView mAddress;
 
             UriViewHolder(View contentView) {
                 super(contentView);
                 mUri = (TextView) contentView.findViewById(R.id.uri);
                 mPath = (TextView) contentView.findViewById(R.id.path);
+                mAddress = (TextView) contentView.findViewById(R.id.address);
             }
         }
     }

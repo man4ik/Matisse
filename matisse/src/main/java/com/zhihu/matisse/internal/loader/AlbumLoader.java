@@ -109,7 +109,7 @@ public class AlbumLoader extends CursorLoader {
         allAlbum.addRow(new String[]{Album.ALBUM_ID_ALL, Album.ALBUM_ID_ALL, Album.ALBUM_NAME_ALL, allAlbumCoverPath,
                 String.valueOf(totalCount)});
 
-        return new MergeCursor(new Cursor[]{allAlbum, albums});
+        return new MergeCursor(new Cursor[]{allAlbum});
     }
 
     @Override

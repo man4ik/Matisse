@@ -43,24 +43,11 @@
             android:layout_marginRight="@dimen/item_margin_horizontal"
             android:layout_marginTop="8dp"
             android:minHeight="56dp"
-            android:text="Zhihu"
+            android:text="Try it"
             android:textAllCaps="false"
             android:textColor="@android:color/white"
             android:theme="@style/ZhihuOverlay"/>
 
-        <Button
-            android:id="@+id/dracula"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="32dp"
-            android:layout_marginLeft="@dimen/item_margin_horizontal"
-            android:layout_marginRight="@dimen/item_margin_horizontal"
-            android:layout_marginTop="16dp"
-            android:minHeight="56dp"
-            android:text="Dracula"
-            android:textAllCaps="false"
-            android:textColor="@android:color/white"
-            android:theme="@style/DraculaOverlay"/>
     </LinearLayout>
 
     <android.support.v7.widget.RecyclerView
