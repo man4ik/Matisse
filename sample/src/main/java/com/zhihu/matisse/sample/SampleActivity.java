@@ -123,7 +123,6 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
 
             } catch (Exception e) {
                 new AlertDialog.Builder(this).setMessage("1:" + e.getMessage()).show();
-
             }
 
 /*
